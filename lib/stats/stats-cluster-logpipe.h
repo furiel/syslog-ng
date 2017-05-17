@@ -25,20 +25,21 @@
 #ifndef STATS_CLUSTER_LOGPIPE_H_INCLUDED
 #define STATS_CLUSTER_LOGPIPE_H_INCLUDED
 
-#include "syslog-ng.h" 
+#include "syslog-ng.h"
 
 typedef enum
 {
-  SC_TYPE_DROPPED=0, /* number of messages dropped */
-  SC_TYPE_PROCESSED, /* number of messages processed */
-  SC_TYPE_QUEUED,    /* number of messages on disk */
-  SC_TYPE_SUPPRESSED,/* number of messages suppressed */
-  SC_TYPE_STAMP,     /* timestamp */
+  SC_TYPE_DROPPED=0,    /* number of messages dropped */
+  SC_TYPE_PROCESSED,    /* number of messages processed */
+  SC_TYPE_QUEUED,       /* number of messages on disk */
+  SC_TYPE_SUPPRESSED,   /* number of messages suppressed */
+  SC_TYPE_STAMP,        /* timestamp */
   SC_TYPE_MEMORY_USAGE,
+  SC_TYPE_GENERAL_ERROR, /* error counter for pipe elements */
+  SC_TYPE_FORMAT_ERROR, /* format error counter for pipe elements */
   SC_TYPE_MAX
 } StatsCounterGroupLogPipe;
 
 void stats_cluster_logpipe_key_set(StatsClusterKey *key, guint16 component, const gchar *id, const gchar *instance);
 
 #endif
-

@@ -33,6 +33,8 @@ static const gchar *tag_names[SC_TYPE_MAX] =
   /* [SC_TYPE_SUPPRESSED] = */ "suppressed",
   /* [SC_TYPE_STAMP] = */ "stamp",
   /* [SC_TYPE_MEMORY_USAGE] = */ "memory_usage",
+  /* [SC_TYPE_GENERAL_ERROR] = */ "general_error",
+  /* [SC_TYPE_FORMAT_ERROR] = */ "format_error",
 };
 
 static void

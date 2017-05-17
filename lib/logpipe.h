@@ -21,7 +21,7 @@
  * COPYING for details.
  *
  */
-  
+
 #ifndef LOGPIPE_H_INCLUDED
 #define LOGPIPE_H_INCLUDED
 
@@ -205,6 +205,11 @@ struct _LogPathOptions
 };
 
 #define LOG_PATH_OPTIONS_INIT { TRUE, FALSE, NULL }
+#define log_pipe_error(pipe, description, tags...) \
+do { \
+  stats_counter_inc(pipe.general_error); \
+  msg_error(description, ##tags); \
+} while (0)
 
 struct _LogPipe
 {
@@ -213,6 +218,8 @@ struct _LogPipe
   GlobalConfig *cfg;
   LogExprNode *expr_node;
   LogPipe *pipe_next;
+  StatsCounterItem *general_error;
+  StatsCounterItem *format_error;
   const gchar *persist_name;
 
   /* user_data pointer of the "queue" method in case it is overridden

@@ -338,6 +338,8 @@ log_threaded_dest_driver_start(LogPipe *s)
   stats_register_counter(0, &sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_register_counter(0, &sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  stats_register_counter(0, &sc_key, SC_TYPE_GENERAL_ERROR, &s->general_error);
+  stats_register_counter(0, &sc_key, SC_TYPE_FORMAT_ERROR, &s->format_error);
   stats_register_written_view(cluster, self->processed_messages, self->dropped_messages, self->queued_messages);
   stats_unlock();
 
@@ -376,6 +378,8 @@ log_threaded_dest_driver_deinit_method(LogPipe *s)
   stats_unregister_counter(&sc_key, SC_TYPE_DROPPED, &self->dropped_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_PROCESSED, &self->processed_messages);
   stats_unregister_counter(&sc_key, SC_TYPE_MEMORY_USAGE, &self->memory_usage);
+  stats_unregister_counter(&sc_key, SC_TYPE_GENERAL_ERROR, &s->general_error);
+  stats_unregister_counter(&sc_key, SC_TYPE_FORMAT_ERROR, &s->format_error);
   stats_unlock();
 
   if (!log_dest_driver_deinit_method(s))
@@ -445,6 +449,7 @@ log_threaded_dest_driver_message_drop(LogThrDestDriver *self,
                                       LogMessage *msg)
 {
   stats_counter_inc(self->dropped_messages);
+  stats_counter_inc(self->super.super.super.general_error);
   msg_error("Multiple failures while sending message to destination, message dropped",
             evt_tag_str("driver", self->super.super.id),
             evt_tag_int("number_of_retries", self->retries.max));
