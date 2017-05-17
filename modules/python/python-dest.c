@@ -288,7 +288,10 @@ _py_construct_message(PythonDestDriver *self, LogMessage *msg, PyObject **msg_ob
     {
       success = py_value_pairs_apply(self->vp, &self->template_options, self->super.seq_num, msg, msg_object);
       if (!success && (self->template_options.on_error & ON_ERROR_DROP_MESSAGE))
-        return FALSE;
+        {
+          stats_counter_inc(self->super.super.super.super.format_error);
+          return FALSE;
+        }
     }
   else
     {
@@ -313,6 +316,7 @@ python_dd_insert(LogThrDestDriver *d, LogMessage *msg)
       _py_invoke_open(self);
       if (!_py_invoke_is_opened(self))
         {
+          stats_counter_inc(self->super.super.super.super.general_error);
           result = WORKER_INSERT_RESULT_NOT_CONNECTED;
           goto exit;
         }
@@ -342,12 +346,16 @@ exit:
 static void
 python_dd_open(PythonDestDriver *self)
 {
+  gboolean result;
   PyGILState_STATE gstate;
 
   gstate = PyGILState_Ensure();
   if (!_py_invoke_is_opened(self))
-    _py_invoke_open(self);
-
+    {
+      result = _py_invoke_open(self);
+      if (!result)
+        stats_counter_inc(self->super.super.super.super.general_error);
+    }
   PyGILState_Release(gstate);
 }
 
@@ -458,6 +466,7 @@ python_dd_deinit(LogPipe *d)
 
   gstate = PyGILState_Ensure();
   _py_invoke_deinit(self);
+
   PyGILState_Release(gstate);
 
   return log_threaded_dest_driver_deinit_method(d);
