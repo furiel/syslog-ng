@@ -44,6 +44,8 @@ set(PYTHON_SOURCES
     python-parser.h
     python-logmsg.h
     python-logmsg.c
+    python-stats.h
+    python-stats.c
     python-global-code-loader.h
     python-global-code-loader.c
     python-debugger.c
@@ -56,6 +58,7 @@ set(PYTHON_SOURCES
 )
 
 set (PYTHON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-strict-aliasing")
 
 generate_y_from_ym(modules/python/python-grammar)
 

@@ -7,7 +7,8 @@ modules_python_libmod_python_la_CFLAGS		= \
 	$(PYTHON_CFLAGS)			  \
 	$(SYSLOG_NG_CFLAGS)			  \
 	$(EVENTLOG_CFLAGS)			  \
-	$(IVYKIS_CFLAGS)
+	$(IVYKIS_CFLAGS)					\
+	-fno-strict-aliasing
 modules_python_libmod_python_la_CPPFLAGS		= \
     $(AM_CPPFLAGS) \
 	-I$(top_srcdir)/modules/python		  \
@@ -47,7 +48,10 @@ modules_python_libmod_python_la_SOURCES		= \
 	modules/python/python-debugger.h	  \
 	modules/python/python-debugger.c	  \
 	modules/python/python-logparser.h	  \
-	modules/python/python-logparser.c
+	modules/python/python-logparser.c   \
+	modules/python/python-stats.h	  \
+	modules/python/python-stats.c
+
 
 modules_python_libmod_python_la_LDFLAGS		 = \
 	$(MODULE_LDFLAGS) \
