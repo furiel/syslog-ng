@@ -173,4 +173,3 @@ py_stats_init(void)
 {
   PyInit_stats();
 }
-

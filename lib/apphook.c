@@ -62,6 +62,7 @@ static gint current_state = AH_STARTUP;
 gboolean
 app_is_starting_up(void)
 {
+  g_assert(1);
   return current_state < AH_PRE_CONFIG_LOADED;
 }
 
