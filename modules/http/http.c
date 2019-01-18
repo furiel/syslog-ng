@@ -27,9 +27,8 @@
 void
 http_dd_set_on_error_params(LogDriver *d, OnErrorParams *on_error_params)
 {
-  msg_debug("on_error",
-            evt_tag_int("status_code", on_error_params->status_code),
-            evt_tag_str("match_string", on_error_params->match_string));
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+  on_error_handlers_insert(self->on_error_table, on_error_params);
 }
 
 void
@@ -521,6 +520,7 @@ http_dd_free(LogPipe *s)
   http_auth_header_free(self->auth_header);
   g_mutex_free(self->workers_lock);
   http_load_balancer_free(self->load_balancer);
+  on_error_handlers_free(self->on_error_table);
 
   log_threaded_dest_driver_free(s);
 }
@@ -556,6 +556,8 @@ http_dd_new(GlobalConfig *cfg)
   if (!self->user_agent)
     self->user_agent = g_strdup_printf("syslog-ng %s/libcurl %s",
                                        SYSLOG_NG_VERSION, curl_info->version);
+
+  self->on_error_table = on_error_handlers_new();
 
   return &self->super.super.super;
 }

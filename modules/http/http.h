@@ -64,6 +64,7 @@ typedef struct
   glong batch_bytes;
   LogTemplate *body_template;
   LogTemplateOptions template_options;
+  OnErrorHandlers *on_error_table;
 } HTTPDestinationDriver;
 
 gboolean http_dd_init(LogPipe *s);

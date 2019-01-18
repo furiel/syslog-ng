@@ -80,7 +80,28 @@ _curl_debug_function(CURL *handle, curl_infotype type,
 static size_t
 _curl_write_function(char *ptr, size_t size, size_t nmemb, void *userdata)
 {
-  // Discard response content
+  if (!userdata)
+    {
+      // Discard response content
+      return nmemb * size;
+    }
+
+  CURL *self = ((gpointer *)userdata)[0];
+  OnErrorHandlers *table = ((gpointer *)userdata)[1];
+  OnErrorParams **on_error_params = ((gpointer *)userdata)[2];
+
+  glong code;
+  CURLcode retval = curl_easy_getinfo(self, CURLINFO_RESPONSE_CODE, &code);
+  if (retval != CURLE_OK)
+    {
+      msg_error("curl: error querying response code",
+                evt_tag_str("error", curl_easy_strerror(retval)));
+      return 0;
+    }
+
+  if (!*on_error_params)
+    *on_error_params = on_error_handlers_lookup(table, code, ptr, size * nmemb);
+
   return nmemb * size;
 }
 
@@ -247,7 +268,7 @@ _add_message_to_batch(HTTPDestinationWorker *self, LogMessage *msg)
 }
 
 LogThreadedResult
-map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
+default_map_http_status_to_worker_status(HTTPDestinationWorker *self, const gchar *url, glong http_code)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
   LogThreadedResult retval = LTR_ERROR;
@@ -345,8 +366,30 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
             log_pipe_location_tag(&owner->super.super.super.super));
 }
 
+static LogThreadedResult
+_map_on_error_result(OnErrorResult self)
+{
+  g_assert(self < ON_ERROR_MAX);
+
+  switch (self)
+    {
+    case ON_ERROR_SUCCESS:
+      return LTR_SUCCESS;
+    case ON_ERROR_RETRY:
+      return LTR_ERROR;
+    case ON_ERROR_DROP:
+      return LTR_DROP;
+    case ON_ERROR_DISCONNECT:
+      return LTR_NOT_CONNECTED;
+    default:
+      g_assert_not_reached();
+    };
+
+  return LTR_MAX;
+}
+
 static gboolean
-_curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
+_curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target, OnErrorParams **on_error_params)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
@@ -357,8 +400,14 @@ _curl_perform_request(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *targe
   curl_easy_setopt(self->curl, CURLOPT_HTTPHEADER, self->request_headers);
   curl_easy_setopt(self->curl, CURLOPT_POSTFIELDS, self->request_body->str);
 
-  CURLcode ret = curl_easy_perform(self->curl);
-  if (ret != CURLE_OK)
+  if (on_error_handlers_is_used(owner->on_error_table))
+    {
+      gpointer user_data[] = { self->curl, owner->on_error_table, on_error_params};
+      curl_easy_setopt(self->curl, CURLOPT_WRITEDATA, user_data);
+    }
+
+  CURLcode ret;
+  if ((ret = curl_easy_perform(self->curl)) != CURLE_OK)
     {
       msg_error("curl: error sending HTTP request",
                 evt_tag_str("url", target->url),
@@ -405,7 +454,8 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
 {
   HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
 
-  if (!_curl_perform_request(self, target))
+  OnErrorParams *on_error_params = NULL;
+  if (!_curl_perform_request(self, target, &on_error_params))
     return LTR_NOT_CONNECTED;
 
   glong http_code = 0;
@@ -419,7 +469,10 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
   if (http_code == 401 && owner->auth_header)
     return _renew_header(owner);
 
-  return map_http_status_to_worker_status(self, target->url, http_code);
+  if (on_error_params)
+    return _map_on_error_result(on_error_params->action(on_error_params->user_data));
+
+  return default_map_http_status_to_worker_status(self, target->url, http_code);
 }
 
 /* we flush the accumulated data if
