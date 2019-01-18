@@ -45,3 +45,62 @@ on_error_disconnect(gpointer user_data)
 {
   return ON_ERROR_DISCONNECT;
 }
+
+static void
+_free_page(OnErrorParams *self)
+{
+  g_free((gchar *)self->match_string);
+  g_free(self);
+}
+
+gboolean
+on_error_handlers_is_used(OnErrorHandlers *self)
+{
+  return !!g_hash_table_size(self);
+}
+
+OnErrorHandlers *
+on_error_handlers_new(void)
+{
+  return g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify)_free_page);
+}
+
+void
+on_error_handlers_free(OnErrorHandlers *self)
+{
+  g_hash_table_destroy(self);
+}
+
+static OnErrorParams *
+_clone(OnErrorParams *self)
+{
+  OnErrorParams *clone = g_new(OnErrorParams, 1);
+  *clone = *self;
+  clone->match_string = g_strdup(clone->match_string);
+  return clone;
+}
+
+void
+on_error_handlers_insert(OnErrorHandlers *self, OnErrorParams *params)
+{
+  OnErrorParams *clone = _clone(params);
+  g_hash_table_insert(self, &clone->status_code, clone);
+}
+
+OnErrorParams *
+on_error_handlers_lookup(OnErrorHandlers *self, glong status_code, const gchar *data, gsize len)
+{
+  OnErrorParams *candidate = g_hash_table_lookup(self, &status_code);
+  if (!candidate)
+    return NULL;
+
+  const gchar *match_string = candidate->match_string;
+  if (match_string && match_string[0])
+    {
+      if (g_strstr_len(data, len, match_string))
+        return candidate;
+      else
+        return NULL;
+    }
+  return candidate;
+}

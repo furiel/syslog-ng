@@ -48,4 +48,12 @@ typedef struct
   gpointer user_data;
 } OnErrorParams;
 
+typedef GHashTable OnErrorHandlers;
+
+OnErrorHandlers *on_error_handlers_new(void);
+void on_error_handlers_free(OnErrorHandlers *self);
+void on_error_handlers_insert(OnErrorHandlers *self, OnErrorParams *params);
+OnErrorParams *on_error_handlers_lookup(OnErrorHandlers *self, glong status_code, const gchar *data, gsize len);
+gboolean on_error_handlers_is_used(OnErrorHandlers *self);
+
 #endif

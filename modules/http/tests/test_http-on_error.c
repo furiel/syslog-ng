@@ -26,5 +26,16 @@
 
 Test(on_error, test_on_error)
 {
-  cr_assert(TRUE);
+  OnErrorHandlers *self = on_error_handlers_new();
+
+  cr_assert_null(on_error_handlers_lookup(self, 404, NULL, 0));
+
+  on_error_handlers_insert(self, &(OnErrorParams)
+  {
+    .status_code = 404
+  });
+  cr_assert(on_error_handlers_lookup(self, 404, NULL, 0));
+
+  on_error_handlers_free(self);
+
 }
