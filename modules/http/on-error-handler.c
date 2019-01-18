@@ -59,15 +59,27 @@ on_error_handlers_is_used(OnErrorHandlers *self)
   return !!g_hash_table_size(self);
 }
 
+static void
+_free_entry(glong *status_code, GSList *table)
+{
+  g_slist_free_full(table, (GDestroyNotify)_free_page);
+}
+
 OnErrorHandlers *
 on_error_handlers_new(void)
 {
-  return g_hash_table_new_full(g_int_hash, g_int_equal, NULL, (GDestroyNotify)_free_page);
+  /* It would be tempting to use g_hash_table_new_full with
+  _free_entry. But the thing is, during insert, we append to a list,
+  meaning the pointer behind a http-code will change. So I need to
+  replace the value. Then _free_page would be called, freeing the rest
+  of the list that we still want to use. */
+  return g_hash_table_new(g_int_hash, g_int_equal);
 }
 
 void
 on_error_handlers_free(OnErrorHandlers *self)
 {
+  g_hash_table_foreach(self, (GHFunc)_free_entry, NULL);
   g_hash_table_destroy(self);
 }
 
@@ -84,23 +96,43 @@ void
 on_error_handlers_insert(OnErrorHandlers *self, OnErrorParams *params)
 {
   OnErrorParams *clone = _clone(params);
-  g_hash_table_insert(self, &clone->status_code, clone);
+
+  GSList *table = g_hash_table_lookup(self, &clone->status_code);
+  GSList *new_table = g_slist_append(table, clone);
+  g_hash_table_insert(self, &clone->status_code, new_table);
+}
+
+typedef struct
+{
+  const gchar *data;
+  gsize len;
+} CString;
+
+static gint
+_match(OnErrorParams *self, CString *cstring)
+{
+  const gchar *match_string = self->match_string;
+  if (match_string && match_string[0])
+    {
+      if (g_strstr_len(cstring->data, cstring->len, match_string))
+        return 0;
+      else
+        return -1;
+    }
+  return 0;
 }
 
 OnErrorParams *
 on_error_handlers_lookup(OnErrorHandlers *self, glong status_code, const gchar *data, gsize len)
 {
-  OnErrorParams *candidate = g_hash_table_lookup(self, &status_code);
-  if (!candidate)
+  GSList *table = g_hash_table_lookup(self, &status_code);
+  if (!table)
     return NULL;
 
-  const gchar *match_string = candidate->match_string;
-  if (match_string && match_string[0])
-    {
-      if (g_strstr_len(data, len, match_string))
-        return candidate;
-      else
-        return NULL;
-    }
-  return candidate;
+  CString string_to_match = { .data=data, .len=len };
+  GSList *element = g_slist_find_custom(table, &string_to_match, (GCompareFunc)_match);
+
+  if (element)
+    return element->data;
+  return NULL;
 }
