@@ -2,6 +2,8 @@ if ENABLE_HTTP
 
 module_LTLIBRARIES      += modules/http/libhttp.la
 modules_http_libhttp_la_SOURCES = \
+  modules/http/on-error-handler.h   \
+  modules/http/on-error-handler.c   \
   modules/http/http.h 		    \
   modules/http/http.c               \
   modules/http/http-worker.c	    \
