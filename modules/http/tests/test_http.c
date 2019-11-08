@@ -44,7 +44,7 @@ ParameterizedTestParameters(http, http_code_tests)
   static struct http_action_test_params params[] =
   {
     { 100, "Continue", LTR_ERROR},
-    { 101, "Switching Protocols", LTR_ERROR},
+    { 101, "Switching Protocols", LTR_NOT_CONNECTED},
     { 103, "Early Hints", LTR_ERROR},
 
     { 200, "OK", LTR_SUCCESS},
@@ -55,51 +55,58 @@ ParameterizedTestParameters(http, http_code_tests)
     { 205, "Reset Content", LTR_SUCCESS},
     { 206, "Partial Content", LTR_SUCCESS},
 
-    { 300, "Multiple Choices", LTR_ERROR},
-    { 301, "Moved Permanently", LTR_ERROR},
-    { 302, "Found", LTR_ERROR},
-    { 303, "See Other", LTR_ERROR},
-    { 304, "Not Modified", LTR_ERROR},
-    { 307, "Temporary Redirect", LTR_ERROR},
-    { 308, "Permanent Redirect", LTR_ERROR},
+    { 300, "Multiple Choices", LTR_NOT_CONNECTED},
+    { 301, "Moved Permanently", LTR_NOT_CONNECTED},
+    { 302, "Found", LTR_NOT_CONNECTED},
+    { 303, "See Other", LTR_NOT_CONNECTED},
+    { 304, "Not Modified", LTR_SUCCESS},
+    { 307, "Temporary Redirect", LTR_NOT_CONNECTED},
+    { 308, "Permanent Redirect", LTR_NOT_CONNECTED},
 
-    { 400, "Bad Request", LTR_DROP},
-    { 401, "Unauthorized", LTR_DROP},
-    { 402, "Payment Required", LTR_DROP},
-    { 403, "Forbidden", LTR_DROP},
-    { 404, "Not Found", LTR_DROP},
-    { 405, "Method Not Allowed", LTR_DROP},
-    { 406, "Not Acceptable", LTR_DROP},
-    { 407, "Proxy Authentication Required", LTR_DROP},
-    { 408, "Request Timeout", LTR_DROP},
-    { 409, "Conflict", LTR_DROP},
+    { 400, "Bad Request", LTR_NOT_CONNECTED},
+    { 401, "Unauthorized", LTR_NOT_CONNECTED},
+    { 402, "Payment Required", LTR_NOT_CONNECTED},
+    { 403, "Forbidden", LTR_NOT_CONNECTED},
+    { 404, "Not Found", LTR_ERROR},
+    { 405, "Method Not Allowed", LTR_NOT_CONNECTED},
+    { 406, "Not Acceptable", LTR_NOT_CONNECTED},
+    { 407, "Proxy Authentication Required", LTR_NOT_CONNECTED},
+    { 408, "Request Timeout", LTR_ERROR},
+    { 409, "Conflict", LTR_ERROR},
     { 410, "Gone", LTR_DROP},
-    { 411, "Length Required", LTR_DROP},
-    { 412, "Precondition Failed", LTR_DROP},
-    { 413, "Payload Too Large", LTR_DROP},
-    { 414, "URI Too Long", LTR_DROP},
-    { 415, "Unsupported Media Type", LTR_DROP},
+    { 411, "Length Required", LTR_NOT_CONNECTED},
+    { 412, "Precondition Failed", LTR_NOT_CONNECTED},
+    { 413, "Payload Too Large", LTR_ERROR},
+    { 414, "URI Too Long", LTR_ERROR},
+    { 415, "Unsupported Media Type", LTR_NOT_CONNECTED},
     { 416, "Range Not Satisfiable", LTR_DROP},
-    { 417, "Expectation Failed", LTR_DROP},
-    { 418, "I'm a teapot", LTR_DROP},
-    { 422, "Unprocessable Entity", LTR_DROP},
-    { 425, "Too Early", LTR_DROP},
-    { 426, "Upgrade Required", LTR_DROP},
-    { 428, "Precondition Required", LTR_DROP},
-    { 429, "Too Many Requests", LTR_DROP},
+    { 417, "Expectation Failed", LTR_NOT_CONNECTED},
+    { 418, "I'm a teapot", LTR_NOT_CONNECTED},
+    { 422, "Unprocessable Entity", LTR_NOT_CONNECTED},
+    { 425, "Too Early", LTR_ERROR},
+    { 426, "Upgrade Required", LTR_NOT_CONNECTED},
+    { 428, "Precondition Required", LTR_ERROR},
+    { 429, "Too Many Requests", LTR_ERROR},
     { 431, "Request Header Fields Too Large", LTR_DROP},
     { 451, "Unavailable For Legal Reasons", LTR_DROP},
 
     { 500, "Internal Server Error", LTR_ERROR},
-    { 501, "Not Implemented", LTR_ERROR},
+    { 501, "Not Implemented", LTR_NOT_CONNECTED},
     { 502, "Bad Gateway", LTR_ERROR},
     { 503, "Service Unavailable", LTR_ERROR},
     { 504, "Gateway Timeout", LTR_ERROR},
-    { 505, "HTTP Version Not Supported", LTR_ERROR},
-    { 506, "Variant Also Negotiates", LTR_ERROR},
+    { 505, "HTTP Version Not Supported", LTR_NOT_CONNECTED},
+    { 506, "Variant Also Negotiates", LTR_NOT_CONNECTED},
     { 507, "Insufficient Storage", LTR_ERROR},
-    { 508, "Loop Detected", LTR_ERROR},
-    { 511, "Network Authentication Required", LTR_ERROR},
+    { 508, "Loop Detected", LTR_DROP},
+    { 511, "Network Authentication Required", LTR_NOT_CONNECTED},
+
+    // Some external values to test default behaviour
+    { 199, "notexist", LTR_NOT_CONNECTED},
+    { 299, "notexist", LTR_SUCCESS},
+    { 399, "notexist", LTR_NOT_CONNECTED},
+    { 399, "notexist", LTR_NOT_CONNECTED},
+    { 599, "notexist", LTR_NOT_CONNECTED}
   };
 
   return cr_make_param_array(struct http_action_test_params, params, sizeof(params)/sizeof(params[0]));
@@ -111,7 +118,10 @@ ParameterizedTest(struct http_action_test_params *param, http, http_code_tests)
   HTTPDestinationWorker *worker = (HTTPDestinationWorker *) http_dw_new(&driver->super, 0);
   const gchar *url = "http://dummy.url";
 
-  cr_assert_eq(default_map_http_status_to_worker_status(worker, url, param->http_code), param->expected_value);
+  LogThreadedResult res =  default_map_http_status_to_worker_status(worker, url, param->http_code);
+  cr_assert_eq(res, param->expected_value,
+               "code: %ld, explanation: %s, actual: %d, expected: %d",
+               param->http_code, param->explanation, res, param->expected_value);
 
   log_threaded_dest_worker_free(&worker->super);
   log_pipe_unref((LogPipe *)driver);
