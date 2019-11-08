@@ -92,13 +92,25 @@ _clone(OnErrorParams *self)
   return clone;
 }
 
+static gint
+_item_without_matchstring_later(OnErrorParams *to_add, OnErrorParams *from_list)
+{
+  if (!from_list->match_string)
+    return -1;
+  if (!to_add->match_string)
+    return 1;
+
+  return 1; // Maintain ordering between Params with matchstring
+}
+
 void
 on_error_handlers_insert(OnErrorHandlers *self, OnErrorParams *params)
 {
   OnErrorParams *clone = _clone(params);
 
   GSList *table = g_hash_table_lookup(self, &clone->status_code);
-  GSList *new_table = g_slist_append(table, clone);
+  GSList *new_table = g_slist_insert_sorted_with_data(table, clone, (GCompareDataFunc)_item_without_matchstring_later,
+                                                      NULL);
   g_hash_table_insert(self, &clone->status_code, new_table);
 }
 
