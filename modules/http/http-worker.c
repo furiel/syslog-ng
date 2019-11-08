@@ -367,20 +367,56 @@ _debug_response_info(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target
 }
 
 static LogThreadedResult
-_map_on_error_result(OnErrorResult self)
+_map_on_error_result(HTTPDestinationWorker *self, const gchar *url, OnErrorParams *params)
 {
-  g_assert(self < ON_ERROR_MAX);
+  OnErrorResult result = params->action(params->user_data);
+  g_assert(result < ON_ERROR_MAX);
+  HTTPDestinationDriver *owner = (HTTPDestinationDriver *) self->super.owner;
+  glong http_code = params->status_code;
+  const gchar *match_string = params->match_string;
 
-  switch (self)
+  switch (result)
     {
     case ON_ERROR_SUCCESS:
+      msg_debug("http: handled by on_error",
+                evt_tag_str("decision", "success"),
+                evt_tag_str("url", owner->url),
+                evt_tag_int("status_code", http_code),
+                evt_tag_str("match_string", match_string),
+                evt_tag_str("driver", owner->super.super.super.id),
+                log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_SUCCESS;
+
     case ON_ERROR_RETRY:
+      msg_notice("http: handled by on_error",
+                 evt_tag_str("decision", "retry"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("match_string", match_string),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_ERROR;
+
     case ON_ERROR_DROP:
+      msg_notice("http: handled by on_error",
+                 evt_tag_str("decision", "drop"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("match_string", match_string),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_DROP;
+
     case ON_ERROR_DISCONNECT:
+      msg_notice("http: handled by on_error",
+                 evt_tag_str("decision", "disconnect"),
+                 evt_tag_str("url", owner->url),
+                 evt_tag_int("status_code", http_code),
+                 evt_tag_str("match_string", match_string),
+                 evt_tag_str("driver", owner->super.super.super.id),
+                 log_pipe_location_tag(&owner->super.super.super.super));
       return LTR_NOT_CONNECTED;
+
     default:
       g_assert_not_reached();
     };
@@ -470,7 +506,7 @@ _flush_on_target(HTTPDestinationWorker *self, HTTPLoadBalancerTarget *target)
     return _renew_header(owner);
 
   if (on_error_params)
-    return _map_on_error_result(on_error_params->action(on_error_params->user_data));
+    return _map_on_error_result(self, target->url, on_error_params);
 
   return default_map_http_status_to_worker_status(self, target->url, http_code);
 }
