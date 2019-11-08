@@ -24,6 +24,13 @@
 #include "http-worker.h"
 
 /* HTTPDestinationDriver */
+void
+http_dd_set_on_error_params(LogDriver *d, OnErrorParams *on_error_params)
+{
+  msg_debug("on_error",
+            evt_tag_int("status_code", on_error_params->status_code),
+            evt_tag_str("match_string", on_error_params->match_string));
+}
 
 void
 http_dd_set_urls(LogDriver *d, GList *url_strings)

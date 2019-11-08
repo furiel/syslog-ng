@@ -31,6 +31,7 @@
 #include "logthrdest/logthrdestdrv.h"
 #include "http-loadbalancer.h"
 #include "http-auth/auth-header.h"
+#include "on-error-handler.h"
 
 typedef struct
 {
@@ -93,6 +94,7 @@ void http_dd_set_batch_bytes(LogDriver *d, glong batch_bytes);
 void http_dd_set_body_prefix(LogDriver *d, const gchar *body_prefix);
 void http_dd_set_body_suffix(LogDriver *d, const gchar *body_suffix);
 void http_dd_set_delimiter(LogDriver *d, const gchar *delimiter);
+void http_dd_set_on_error_params(LogDriver *d, OnErrorParams *on_error_params);
 LogTemplateOptions *http_dd_get_template_options(LogDriver *d);
 
 #endif

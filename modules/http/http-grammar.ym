@@ -32,9 +32,12 @@
 #include "cfg-parser.h"
 #include "http.h"
 #include "http-grammar.h"
+#include "on-error-handler.h"
 #include "plugin.h"
 
 #include <string.h>
+
+OnErrorParams* last_on_error_params;
 
 }
 
@@ -73,10 +76,19 @@
 %token KW_WORKERS
 %token KW_ACCEPT_REDIRECTS
 %token KW_AUTH_HEADER
+%token KW_ON_HTTP_ERROR
+%token KW_SUCCESS
+%token KW_RETRY
+%token KW_DROP
+%token KW_DISCONNECT
+%token KW_ERROR_MSG
+%token KW_ACTION
+
 
 %type   <ptr> driver
 %type   <ptr> http_destination
 %type   <ptr> http_auth_header_plugin
+%type   <ptr> on_error_action
 
 /* INCLUDE_DECLS */
 
@@ -109,6 +121,35 @@ http_options
     |
     ;
 
+on_error_action
+    : KW_SUCCESS { $$ = on_error_success; }
+    | KW_RETRY { $$ = on_error_retry; }
+    | KW_DROP { $$ = on_error_drop; }
+    | KW_DISCONNECT { $$ = on_error_disconnect; }
+    ;
+
+on_error_option
+    : KW_ERROR_MSG '(' string ')' { last_on_error_params->match_string = $3; }
+    | KW_ACTION '(' on_error_action ')' { last_on_error_params->action = $3; }
+    ;
+
+on_error_options
+    : on_error_option on_error_options
+    |
+    ;
+
+on_error_block
+    : '(' { last_on_error_params = g_new0(OnErrorParams, 1); }
+       positive_integer { last_on_error_params->status_code = $3; }
+       on_error_options
+      ')' {
+             CHECK_ERROR(last_on_error_params->action, @1, "action is mandatory parameter");
+             http_dd_set_on_error_params(last_driver, last_on_error_params);
+             free(last_on_error_params->match_string);
+             g_free(last_on_error_params);
+          }
+    ;
+
 http_option
     : KW_URL        '(' string_list ')'        { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }
     | KW_USER       '(' string ')'            { http_dd_set_user(last_driver, $3); free($3); }
@@ -129,6 +170,7 @@ http_option
     | http_tls_option
     | KW_TLS '(' http_tls_options ')'
     | { last_template_options = http_dd_get_template_options(last_driver); } template_option
+    | KW_ON_HTTP_ERROR on_error_block
     ;
 
 http_tls_options
