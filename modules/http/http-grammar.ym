@@ -38,6 +38,7 @@
 #include <string.h>
 
 HttpResponseHandler last_response_handler;
+GList *last_list_of_positive_integers;
 
 }
 
@@ -132,11 +133,40 @@ on_http_response_blocks
     ;
 
 on_http_response_block
+    : on_http_response_single
+    | on_http_response_list
+    ;
+
+on_http_response_single
     : positive_integer { last_response_handler.status_code = $1; }
       LL_ARROW
       http_response_action { last_response_handler.action = $4;
                              http_dd_insert_response_handler(last_driver, &last_response_handler);}
     ;
+
+list_of_positive_integers
+    : positive_integer list_of_positive_integers
+        {
+           gint *integer = g_new0(gint, 1);
+           *integer = $1;
+           last_list_of_positive_integers = g_list_append(last_list_of_positive_integers, integer);
+        }
+    |
+    ;
+
+on_http_response_list
+    : '('
+          list_of_positive_integers
+      ')'
+      LL_ARROW
+      http_response_action
+          {
+              http_dd_batch_insert_response_handler(last_driver, last_list_of_positive_integers, $5);
+              g_list_free_full(last_list_of_positive_integers, g_free);
+              last_list_of_positive_integers = 0;
+          }
+    ;
+
 
 http_option
     : KW_URL        '(' string_list ')'        { http_dd_set_urls(last_driver, $3); g_list_free_full($3, free); }

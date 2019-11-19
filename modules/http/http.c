@@ -24,6 +24,27 @@
 #include "http-worker.h"
 
 /* HTTPDestinationDriver */
+
+static void
+_add_code_with_action(gint *status_code, gpointer *user_data)
+{
+  HttpResponseHandlers *response_handlers = user_data[0];
+  HttpResponseAction *action = user_data[1];
+
+  HttpResponseHandler response_handler = { .status_code = *status_code, .action = *action };
+  http_response_handlers_insert(response_handlers, &response_handler);
+}
+
+void
+http_dd_batch_insert_response_handler(LogDriver *d, GList *status_codes, HttpResponseAction action)
+{
+  HTTPDestinationDriver *self = (HTTPDestinationDriver *) d;
+  g_list_foreach(status_codes, (GFunc)_add_code_with_action, (gpointer[2])
+  {
+    self->response_handlers, &action
+  });
+}
+
 void
 http_dd_insert_response_handler(LogDriver *d, HttpResponseHandler *response_handler)
 {
