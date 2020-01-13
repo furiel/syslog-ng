@@ -22,6 +22,7 @@
 #############################################################################
 import logging
 
+from src.common.blocking import wait_until_true
 from src.driver_io.file.file_io import FileIO
 from src.message_reader.message_reader import MessageReader
 from src.message_reader.message_reader import READ_ALL_MESSAGES
@@ -32,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 class ConsoleLogReader(object):
     def __init__(self, instance_paths):
-        self.__stderr_io = FileIO(instance_paths.get_stderr_path())
+        self.__stderr_path = instance_paths.get_stderr_path()
+        self.__stderr_io = FileIO(self.__stderr_path)
         self.__message_reader = MessageReader(self.__stderr_io.read, SingleLineParser())
 
     def wait_for_start_message(self):
@@ -62,6 +64,13 @@ class ConsoleLogReader(object):
         for expected_message in expected_messages:
             result.append(expected_message in console_log_content)
         return all(result)
+
+    def wait_for_messages_in_console_log(self, expected_message):
+        def is_in_console(expected_message):
+            with open(str(self.__stderr_path)) as f:
+                return expected_message in f.read()
+        if not wait_until_true(lambda: is_in_console(expected_message)):
+            raise Exception("{} was not found in console".format(expected_message))
 
     def check_for_unexpected_messages(self, unexpected_messages):
         unexpected_patterns = ["Plugin module not found"]

@@ -46,3 +46,6 @@ class SyslogNg(object):
 
     def is_process_running(self):
         return self.__syslog_ng_cli.is_process_running()
+
+    def wait_for_console_log(self, log):
+        self.__syslog_ng_cli.wait_for_console_log(log)

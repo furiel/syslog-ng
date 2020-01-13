@@ -143,6 +143,9 @@ class SyslogNgCli(object):
             self.__process = None
             logger.info("syslog-ng process has been stopped with PID: {}\n".format(saved_pid))
 
+    def wait_for_console_log(self, log):
+        self.__console_log_reader.wait_for_messages_in_console_log(log)
+
     # Helper functions
     def __error_handling(self):
         self.__console_log_reader.dump_stderr()
