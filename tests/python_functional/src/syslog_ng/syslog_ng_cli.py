@@ -28,8 +28,10 @@ import src.testcase_parameters.testcase_parameters as tc_parameters
 from src.common.blocking import wait_until_false
 from src.common.blocking import wait_until_true
 from src.syslog_ng.console_log_reader import ConsoleLogReader
+from src.syslog_ng.exceptions import ConfigError
 from src.syslog_ng.syslog_ng_executor import SyslogNgExecutor
 from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ class SyslogNgCli(object):
         result = self.__syntax_only()
         if result["exit_code"] != 0:
             logger.error(result["stderr"])
-            raise Exception("syslog-ng can not started exit_code={}".format(result["exit_code"]))
+            raise ConfigError("syslog-ng can not started exit_code={}".format(result["exit_code"]))
 
     def is_process_running(self):
         return self.__process.poll() is None
