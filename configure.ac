@@ -809,6 +809,11 @@ dnl ***************************************************************************
 AC_CHECK_FUNCS([getrandom])
 
 dnl ***************************************************************************
+dnl check random_r
+dnl ***************************************************************************
+AC_CHECK_FUNCS([random_r])
+
+dnl ***************************************************************************
 dnl libevtlog headers/libraries (remove after relicensing libevtlog)
 dnl ***************************************************************************
 
@@ -1903,6 +1908,7 @@ AM_CONDITIONAL(ENABLE_EXTRA_WARNINGS, [test "$enable_extra_warnings" = "yes"])
 AM_CONDITIONAL(ENABLE_TESTING, [test "$enable_tests" != "no"])
 AM_CONDITIONAL([HAVE_INOTIFY], [test x$ac_cv_func_inotify_init = xyes])
 AM_CONDITIONAL([HAVE_GETRANDOM], [test x$ac_cv_func_getrandom = xyes])
+AM_CONDITIONAL([HAVE_RANDOM_R], [test x$ac_cv_func_random_r = xyes])
 AM_CONDITIONAL([HAVE_FMEMOPEN], [test x$ac_cv_func_fmemopen = xyes])
 AM_CONDITIONAL(ENABLE_IPV6, [test $enable_ipv6 = yes])
 AM_CONDITIONAL(NOSETESTS, [test "x$NOSETESTS" != "x"])

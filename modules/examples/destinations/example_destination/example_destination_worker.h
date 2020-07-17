@@ -24,8 +24,13 @@
 #define EXAMPLE_DESTINATION_WORKER_H_INCLUDED 1
 
 #include "logthrdest/logthrdestdrv.h"
+#include "syslog-ng.h"
 
 #include <stdlib.h>
+
+#ifndef SYSLOG_NG_HAVE_RANDOM_R
+struct random_data {};
+#endif
 
 typedef struct _ExampleDestinationWorker
 {

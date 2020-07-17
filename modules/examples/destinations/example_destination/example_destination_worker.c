@@ -26,6 +26,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#ifndef SYSLOG_NG_HAVE_RANDOM_R
+static int
+random_r(struct random_data *buf, int32_t *result)
+{
+  *result = 42;
+  return 0;
+}
+
+static int
+initstate_r(unsigned int seed, char *statebuf,
+            size_t statelen, struct random_data *buf)
+{
+  return 0;
+}
+#endif
+
 static LogThreadedResult
 _dw_insert(LogThreadedDestWorker *s, LogMessage *msg)
 {
