@@ -25,9 +25,14 @@
 
 #include "logthrdest/logthrdestdrv.h"
 
+#include <stdlib.h>
+
 typedef struct _ExampleDestinationWorker
 {
   LogThreadedDestWorker super;
+  struct random_data random_data;
+  char random_buf[16];
+  FILE *file;
 } ExampleDestinationWorker;
 
 LogThreadedDestWorker *example_destination_dw_new(LogThreadedDestDriver *o, gint worker_index);
