@@ -29,8 +29,8 @@ import pytest
 from pathlib2 import Path
 
 import light.testcase_parameters.testcase_parameters as tc_parameters
+from light.message import LogMessage
 from light.message_builder.bsd_format import BSDFormat
-from light.message_builder.log_message import LogMessage
 from light.syslog_ng.syslog_ng import SyslogNg
 from light.syslog_ng.syslog_ng_paths import SyslogNgPaths
 from light.syslog_ng_config.syslog_ng_config import SyslogNgConfig
