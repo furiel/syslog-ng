@@ -1,5 +1,5 @@
 add_custom_target(pytest-self-check
-   COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests/python_functional/src --showlocals --verbosity=3)
+   COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests/python_functional/light --showlocals --verbosity=3)
 
 add_custom_target(pytest-check
    COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/tests/python_functional/functional_tests --installdir=${CMAKE_INSTALL_PREFIX} --showlocals --verbosity=3)

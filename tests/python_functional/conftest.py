@@ -28,14 +28,14 @@ from datetime import datetime
 import pytest
 from pathlib2 import Path
 
-import src.testcase_parameters.testcase_parameters as tc_parameters
-from src.message_builder.bsd_format import BSDFormat
-from src.message_builder.log_message import LogMessage
-from src.syslog_ng.syslog_ng import SyslogNg
-from src.syslog_ng.syslog_ng_paths import SyslogNgPaths
-from src.syslog_ng_config.syslog_ng_config import SyslogNgConfig
-from src.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
-from src.testcase_parameters.testcase_parameters import TestcaseParameters
+import light.testcase_parameters.testcase_parameters as tc_parameters
+from light.message_builder.bsd_format import BSDFormat
+from light.message_builder.log_message import LogMessage
+from light.syslog_ng.syslog_ng import SyslogNg
+from light.syslog_ng.syslog_ng_paths import SyslogNgPaths
+from light.syslog_ng_config.syslog_ng_config import SyslogNgConfig
+from light.syslog_ng_ctl.syslog_ng_ctl import SyslogNgCtl
+from light.testcase_parameters.testcase_parameters import TestcaseParameters
 
 logger = logging.getLogger(__name__)
 
@@ -137,5 +137,5 @@ def version(request):
 
 
 pytest_plugins = (
-    "src.helpers.loggen.loggen",
+    "light.helpers.loggen.loggen",
 )

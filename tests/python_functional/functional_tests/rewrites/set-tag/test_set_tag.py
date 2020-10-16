@@ -20,7 +20,7 @@
 # COPYING for details.
 #
 #############################################################################
-from src.syslog_ng_config.statements.filters.filter import Match
+from light.syslog_ng_config.statements.filters.filter import Match
 
 
 def test_set_tag(config, syslog_ng):
